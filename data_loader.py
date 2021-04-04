@@ -11,8 +11,8 @@ import ujson as json
 class MySet(Dataset):
     def __init__(self, input_file):
         self.content = open('./data/' + input_file, 'r').readlines()
-        self.content = map(lambda x: json.loads(x), self.content)
-        self.lengths = map(lambda x: len(x['lngs']), self.content)
+        self.content = list(map(lambda x: json.loads(x), self.content))
+        self.lengths = list(map(lambda x: len(x['lngs']), self.content))
 
     def __getitem__(self, idx):
         return self.content[idx]
@@ -59,7 +59,7 @@ class BatchSampler:
         self.count = len(dataset)
         self.batch_size = batch_size
         self.lengths = dataset.lengths
-        self.indices = range(self.count)
+        self.indices = np.arange(self.count)
 
     def __iter__(self):
         '''
@@ -75,7 +75,8 @@ class BatchSampler:
         # re-arrange indices to minimize the padding
         for i in range(chunks):
             partial_indices = self.indices[i * chunk_size: (i + 1) * chunk_size]
-            partial_indices.sort(key = lambda x: self.lengths[x], reverse = True)
+            # partial_indices.sort(key = lambda x: self.lengths[x], reverse = True)
+            partial_indices = sorted(partial_indices, key=lambda x: self.lengths[x], reverse=True)
             self.indices[i * chunk_size: (i + 1) * chunk_size] = partial_indices
 
         # yield batch
@@ -87,17 +88,22 @@ class BatchSampler:
     def __len__(self):
         return (self.count + self.batch_size - 1) // self.batch_size
 
+
+def aaa(x):
+    return collate_fn(x)
+
+
 def get_loader(input_file, batch_size):
-    dataset = MySet(input_file = input_file)
+    dataset = MySet(input_file=input_file)
 
     batch_sampler = BatchSampler(dataset, batch_size)
 
-    data_loader = DataLoader(dataset = dataset, \
-                             batch_size = 1, \
-                             collate_fn = lambda x: collate_fn(x), \
-                             num_workers = 4,
-                             batch_sampler = batch_sampler,
-                             pin_memory = True
-    )
+    data_loader = DataLoader(dataset=dataset,
+                             batch_size=1,
+                             collate_fn=aaa,
+                             num_workers=4,
+                             batch_sampler=batch_sampler,
+                             pin_memory=True
+                             )
 
     return data_loader

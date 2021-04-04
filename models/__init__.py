@@ -1,1 +1,1 @@
-import DeepTTE
+from models import DeepTTE

@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-import GeoConv
+from models.base import GeoConv
 import numpy as np
 
 from torch.autograd import Variable
@@ -20,21 +20,19 @@ class Net(nn.Module):
         self.pooling_method = pooling_method
 
         self.geo_conv = GeoConv.Net(kernel_size = kernel_size, num_filter = num_filter)
-	#num_filter: output size of each GeoConv + 1:distance of local path + attr_size: output size of attr component
-	if rnn == 'lstm':
-            self.rnn = nn.LSTM(input_size = num_filter + 1 + attr_size, \
-                                      hidden_size = 128, \
-                                      num_layers = 2, \
-                                      batch_first = True
-            )
+        #num_filter: output size of each GeoConv + 1:distance of local path + attr_size: output size of attr component
+        if rnn == 'lstm':
+            self.rnn = nn.LSTM(input_size=num_filter + 1 + attr_size,
+                               hidden_size=128,
+                               num_layers=2,
+                               batch_first=True
+                               )
         elif rnn == 'rnn':
-            self.rnn = nn.RNN(input_size = num_filter + 1 + attr_size, \
-                              hidden_size = 128, \
-                              num_layers = 1, \
-                              batch_first = True
-            )
-
-
+            self.rnn = nn.RNN(input_size=num_filter + 1 + attr_size,
+                              hidden_size=128,
+                              num_layers=1,
+                              batch_first=True
+                              )
         if pooling_method == 'attention':
             self.attr2atten = nn.Linear(attr_size, 128)
 
@@ -61,7 +59,7 @@ class Net(nn.Module):
     def attent_pooling(self, hiddens, lens, attr_t):
         attent = F.tanh(self.attr2atten(attr_t)).permute(0, 2, 1)
 
-	#hidden b*s*f atten b*f*1 alpha b*s*1 (s is length of sequence)
+        #hidden b*s*f atten b*f*1 alpha b*s*1 (s is length of sequence)
         alpha = torch.bmm(hiddens, attent)
         alpha = torch.exp(-alpha)
 
@@ -84,7 +82,7 @@ class Net(nn.Module):
         # concat the loc_conv and the attributes
         conv_locs = torch.cat((conv_locs, expand_attr_t), dim = 2)
 
-        lens = map(lambda x: x - self.kernel_size + 1, traj['lens'])
+        lens = list(map(lambda x: x - self.kernel_size + 1, traj['lens']))
 
         packed_inputs = nn.utils.rnn.pack_padded_sequence(conv_locs, lens, batch_first = True)
 

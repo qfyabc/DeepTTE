@@ -56,10 +56,11 @@ def train(model, elogger, train_set, eval_set):
 
     optimizer = optim.Adam(model.parameters(), lr = 1e-3)
 
-    for epoch in xrange(args.epochs):
-        print 'Training on epoch {}'.format(epoch)
+    for epoch in range(args.epochs):
+        print('Training on epoch {}'.format(epoch))
+        model.train()
         for input_file in train_set:
-            print 'Train on file {}'.format(input_file)
+            print('Train on file {}'.format(input_file))
 
             # data loader, return two dictionaries, attr and traj
             data_iter = data_loader.get_loader(input_file, args.batch_size)
@@ -77,16 +78,19 @@ def train(model, elogger, train_set, eval_set):
                 loss.backward()
                 optimizer.step()
 
-                running_loss += loss.data[0]
-                print '\r Progress {:.2f}%, average loss {}'.format((idx + 1) * 100.0 / len(data_iter), running_loss / (idx + 1.0)),
-            print
+                # running_loss += loss.data[0]
+                running_loss += loss.data.item()
+                print('\r Progress {:.2f}%, average loss {}'.format((idx + 1) * 100.0 / len(data_iter), running_loss / (idx + 1.0)),)
+            # print
             elogger.log('Training Epoch {}, File {}, Loss {}'.format(epoch, input_file, running_loss / (idx + 1.0)))
 
         # evaluate the model after each epoch
         evaluate(model, elogger, eval_set, save_result = False)
 
         # save the weight file after each epoch
-        weight_name = '{}_{}'.format(args.log_file, str(datetime.datetime.now()))
+        # weight_name = '{}_{}'.format(args.log_file, str(datetime.datetime.now()))
+        time_str = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime(time.time()))
+        weight_name = '{}_{}'.format(args.log_file, time_str)
         elogger.log('Save weight file {}'.format(weight_name))
         torch.save(model.state_dict(), './saved_weights/' + weight_name)
 
@@ -118,9 +122,10 @@ def evaluate(model, elogger, files, save_result = False):
 
             if save_result: write_result(fs, pred_dict, attr)
 
-            running_loss += loss.data[0]
+            # running_loss += loss.data[0]
+            running_loss += loss.data.item()
 
-        print 'Evaluate on file {}, loss {}'.format(input_file, running_loss / (idx + 1.0))
+        print( 'Evaluate on file {}, loss {}'.format(input_file, running_loss / (idx + 1.0)))
         elogger.log('Evaluate File {}, Loss {}'.format(input_file, running_loss / (idx + 1.0)))
 
     if save_result: fs.close()

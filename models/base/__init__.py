@@ -1,1 +1,1 @@
-import Attr, GeoConv, SpatioTemporal
+from models.base import Attr, GeoConv, SpatioTemporal
